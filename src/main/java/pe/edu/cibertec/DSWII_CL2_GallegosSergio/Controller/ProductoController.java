@@ -18,6 +18,7 @@ public class ProductoController {
 
     private ProductoService productoService;
 
+
     @GetMapping("")
     public ResponseEntity<List<Producto>> listarProductos(){
         List<Producto> productoList = new ArrayList<>();
@@ -41,27 +42,14 @@ public class ProductoController {
     }
 
     @GetMapping("/nombre/{nombre}")
-    public ResponseEntity<Producto> obtenerProductoPorNombre(
-            @PathVariable("nombre") String nombre){
-        Producto producto = productoService
-                .obtenerProductoPorNombre(nombre)
-                .orElseThrow(() -> new ResourceNotFoundException("El producto con el nombre "+
-                        nombre + " no existe."));
-
-        return new ResponseEntity<>(producto, HttpStatus.OK);
-    }
-
-    @GetMapping("/nombre/{filtro}")
-    public ResponseEntity<List<Producto>> filtraProductosPorNombre(
-            @PathVariable("filtro") String filtro
+    public ResponseEntity<List<Producto>> buscarProductosPorNombre(
+            @PathVariable("nombre") String nombre
     ){
-        List<Producto> productoList = new ArrayList<>();
-        productoService.obtenerProductosPorFiltro(filtro)
-                .forEach(productoList::add);
-        if(productoList.isEmpty()){
+        List<Producto> productos = productoService.buscarProductosPorNombre(nombre);
+        if (productos.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return new ResponseEntity<>(productoList, HttpStatus.OK);
+        return new ResponseEntity<>(productos, HttpStatus.OK);
     }
 
 
@@ -81,17 +69,48 @@ public class ProductoController {
     ){
         Producto oldProducto = productoService
                 .obtenerProductoPorId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("El producto con el Id Nro. "+
-                        id + " no existe."));
+                .orElse(null);
+        if (oldProducto != null) {
         oldProducto.setNombre(producto.getNombre());
         oldProducto.setDescripcion(producto.getDescripcion());
         oldProducto.setCantidad(producto.getCantidad());
         oldProducto.setFechaVencimiento(producto.getFechaVencimiento());
+        Producto productoupdate = productoService.guardar(oldProducto);
+            return new ResponseEntity<>(productoupdate, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProducto(
+            @PathVariable("id") Integer id
+    ){
+        productoService.eliminarProducto(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 
-        return new ResponseEntity<>(
-                productoService.guardar(oldProducto), HttpStatus.OK
-        );
+
+
+    @GetMapping("/cantidad")
+    public ResponseEntity<List<Producto>> buscarProductosEntre10Y100(){
+        List<Producto> productos = productoService.buscarProductosEntre10Y100();
+        if (productos.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(productos, HttpStatus.OK);
+    }
+
+    @GetMapping("/vencimiento/2024/{anio}")
+    public ResponseEntity<List<Producto>> buscarProductosPorAnio2024(@PathVariable("anio") Integer anio){
+        List<Producto> productoList = new ArrayList<>();
+        productoService.buscarProductosPorAnio2024(anio)
+                .forEach(productoList::add);
+        if (productoList.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(productoList, HttpStatus.OK);
     }
 
 }
+
 
